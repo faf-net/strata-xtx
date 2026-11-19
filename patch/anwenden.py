@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Setzt die gfx1100-Voreinstellungen in einen Strata-Quelltext ein (Stand: v0.2.15).
+"""Setzt die gfx1100-Voreinstellungen in einen Strata-Quelltext ein (Stand: v0.2.16; v0.2.15 mit der alten Ordnerstruktur geht weiter).
 
   python3 anwenden.py <strata-quelltext>
 
-Zwei neue Dateien (gfx1100_defaults.hpp/.cpp) und vier kleine Einfügungen: ein Include und zwei Blöcke in
-src/program/generate.cpp, eine Quelldatei in cmake/strata_gpu_engine.cmake. Jede Einfügung hängt an einer Ankerzeile
+Zwei neue Dateien (gfx1100_defaults.hpp/.cpp) und acht kleine Einfügungen: ein Include und zwei Blöcke in
+src/program/generate.cpp, eine Quelldatei in cmake/strata_gpu_engine.cmake und vier Stellen in serve/server.py (der Neustart
+ohne die Tabelle nach nicht-endlichen Werten). Jede Einfügung hängt an einer Ankerzeile
 des Originals; fehlt ein Anker (neue Strata-Version), bricht das Skript ab und nennt ihn, statt halb zu patchen.
 Ein zweiter Lauf ändert nichts mehr.
 """
@@ -130,12 +131,14 @@ def ersetze(pfad, paare):
 
 def main():
     q = sys.argv[1]
-    shutil.copy(os.path.join(HIER, "gfx1100_defaults.hpp"), os.path.join(q, "include/strata/core/gfx1100_defaults.hpp"))
-    shutil.copy(os.path.join(HIER, "gfx1100_defaults.cpp"), os.path.join(q, "src/core/gfx1100_defaults.cpp"))
-    ersetze(os.path.join(q, "src/program/generate.cpp"),
+    neu = os.path.isdir(os.path.join(q, "engine", "src"))      # ab v0.2.16: engine/ und terminal/ statt der Wurzel
+    e, t = ("engine/", "terminal/") if neu else ("", "")
+    shutil.copy(os.path.join(HIER, "gfx1100_defaults.hpp"), os.path.join(q, e + "include/strata/core/gfx1100_defaults.hpp"))
+    shutil.copy(os.path.join(HIER, "gfx1100_defaults.cpp"), os.path.join(q, e + "src/core/gfx1100_defaults.cpp"))
+    ersetze(os.path.join(q, e + "src/program/generate.cpp"),
             [("Include", INCLUDE_ANKER, INCLUDE_NEU), ("Tabelle setzen", ENV_ANKER, ENV_NEU), ("Chunk-Obergrenze", CHUNK_ANKER, CHUNK_NEU)])
-    ersetze(os.path.join(q, "cmake/strata_gpu_engine.cmake"), [("Quelldatei", CMAKE_ANKER, CMAKE_NEU)])
-    ersetze(os.path.join(q, "serve/server.py"),
+    ersetze(os.path.join(q, e + "cmake/strata_gpu_engine.cmake"), [("Quelldatei", CMAKE_ANKER, CMAKE_NEU)])
+    ersetze(os.path.join(q, t + "serve/server.py"),
             [("Rettung: Methode", RETTUNG_ANKER_1, RETTUNG_NEU_1), ("Rettung: Merker", RETTUNG_ANKER_2, RETTUNG_NEU_2),
              ("Rettung: Wiederholung", RETTUNG_ANKER_3, RETTUNG_NEU_3), ("Rettung: abgeschnittene Antwort", RETTUNG_ANKER_4, RETTUNG_NEU_4)])
 

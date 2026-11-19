@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Den Eigenbau für eine Strata-Version herstellen: Quelltext holen, Patch einsetzen, bauen, Engine-Ordner zusammenstellen.
 
-  python3 xtx_bauen.py v0.2.15 --quelle <klon> --paket <release-paket> --ziel <ausgabe>
-  python3 xtx_bauen.py v0.2.15 --quelle <klon> --paket <release-paket> --ziel <ausgabe> --nur-bau
+  python3 xtx_bauen.py v0.2.16 --quelle <klon> --paket <release-paket> --ziel <ausgabe>
+  python3 xtx_bauen.py v0.2.16 --quelle <klon> --paket <release-paket> --ziel <ausgabe> --nur-bau
 
   --quelle   Klon von https://github.com/Niko1221/Strata (wird auf den Zweig xtx-<version> gestellt)
   --paket    entpackte Release-Pakete dieser Version: <paket>/engine (strata-engine-…-linux-x86_64-hip-rx7900.tar.gz)
@@ -12,8 +12,8 @@
              <ziel>/control (mit serve/server.py aus dem Zweig), <ziel>/BUILD-XTX.json
   --nur-bau  Quelltext-Zweig steht schon, nur neu bauen und einsetzen
 
-Vorher einmal das Bau-Image herstellen (im Klon, wegen requirements.txt):
-  docker build -t strata-bau:rocm-7.10 -f <dieses-repo>/bau/Dockerfile <klon>
+Vorher einmal das Bau-Image herstellen (der Build-Kontext braucht requirements.txt: ab v0.2.16 <klon>/terminal, bis v0.2.15 <klon>):
+  docker build -t strata-bau:rocm-7.10 -f <dieses-repo>/bau/Dockerfile <klon>/terminal
 Fehlt im neuen Quelltext ein Anker des Patches, bricht patch/anwenden.py ab und es wird nichts gebaut.
 """
 import argparse, json, os, shutil, subprocess, sys, time
@@ -45,9 +45,12 @@ def main():
         lauf(*GIT, "fetch", "--tags", "-q", "origin")
         lauf(*GIT, "checkout", "-q", "-B", f"xtx-{ver}", a.tag)
         lauf(sys.executable, f"{HIER}/patch/anwenden.py", SRC)
-        lauf(*GIT, "add", "-A", "include/strata/core/gfx1100_defaults.hpp", "src/core/gfx1100_defaults.cpp",
-             "src/program/generate.cpp", "cmake/strata_gpu_engine.cmake", "serve/server.py")
+        # ab v0.2.16 liegt die Engine unter engine/ und der Server unter terminal/
+        E, T = ("engine/", "terminal/") if os.path.isdir(f"{SRC}/engine/src") else ("", "")
+        lauf(*GIT, "add", "-A", f"{E}include/strata/core/gfx1100_defaults.hpp", f"{E}src/core/gfx1100_defaults.cpp",
+             f"{E}src/program/generate.cpp", f"{E}cmake/strata_gpu_engine.cmake", f"{T}serve/server.py")
         lauf(*GIT, "commit", "-q", "-m", "gfx1100: prompt-path defaults for one discrete RX 7900 XTX / XT under Linux")
+    T = "terminal/" if os.path.isdir(f"{SRC}/engine/src") else ""
     aus = f"{ZIEL}/bau"
     os.makedirs(aus, exist_ok=True)
     lauf("docker", "run", "--rm", "--name", "strata-bau", "-e", f"JOBS={os.environ.get('JOBS', '8')}", "-v", f"{SRC}:/src",
@@ -59,7 +62,7 @@ def main():
         shutil.copy2(f"{PAKET}/engine/strata", f"{ZIEL}/engine/strata.release")
     shutil.copy2(f"{aus}/strata", f"{ZIEL}/engine/strata")
     os.chmod(f"{ZIEL}/engine/strata", 0o755)
-    shutil.copy2(f"{SRC}/serve/server.py", f"{ZIEL}/control/serve/server.py")
+    shutil.copy2(f"{SRC}/{T}serve/server.py", f"{ZIEL}/control/serve/server.py")
     kopf = subprocess.run([*GIT, "log", "-1", "--format=%H"], capture_output=True, text=True).stdout.strip()
     basis = subprocess.run([*GIT, "rev-list", "-n", "1", a.tag], capture_output=True, text=True).stdout.strip()
     json.dump({"built": time.strftime("%Y-%m-%d %H:%M:%S"), "strata_tag": a.tag, "strata_commit": basis, "branch_commit": kopf,

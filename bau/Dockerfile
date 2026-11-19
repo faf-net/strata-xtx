@@ -1,6 +1,6 @@
 # Bauumgebung für Strata (HIP/ROCm) auf der RX 7900 XTX (gfx1100): nur Werkzeuge, kein Quelltext.
 # Der Quelltext wird beim Bauen hineingemountet (bauen.sh), damit ein neuer Stand ohne neues Image baut.
-#   docker build -t strata-bau:rocm-7.10 -f Dockerfile.bau .
+#   docker build -t strata-bau:rocm-7.10 -f bau/Dockerfile <Strata-Klon>/terminal     (bis v0.2.15: <Strata-Klon>)
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 LANG=C.UTF-8
