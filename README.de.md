@@ -1,10 +1,24 @@
 # strata-xtx
 
-Strata für eine Radeon RX 7900 XTX unter Linux: Die Engine liest Prompts etwa doppelt so schnell, ohne einen einzigen Schalter in der Laufkonfiguration.
+Strata für eine Radeon RX 7900 XTX unter Linux: liest lange Prompts etwa doppelt so schnell wie das offizielle Release, ohne einen einzigen Schalter in der Laufkonfiguration.
 
 [English version](README.md)
 
-Dies ist ein inoffizieller Ableger von [Strata](https://github.com/Niko1221/Strata) (MIT). Es ist kein Strata-Release, und Fragen dazu gehören hierher, nicht zum Original. Die Änderung ist klein: rund 200 Zeilen in fünf Dateien. Der aktuelle Stand sitzt auf Strata v0.2.16 (Zweig `xtx-0.2.16`); v0.2.15 lässt sich weiter bauen (Zweig `xtx-0.2.15`).
+| Gegenüber dem Release 0.2.16, auf derselben Karte gemessen | Release | strata-xtx |
+|---|---:|---:|
+| Prompt mit 32.000 Token einlesen | 1.321 Token/s | 2.650 Token/s |
+| Prompt mit 250.000 Token einlesen | 204 s | 87 s |
+| Schreiben im Chat | 69,6 Token/s | 72,5 Token/s |
+| Qualität (eigener Aufgabensatz, 102 Aufgaben) | gleich | gleich |
+
+- **Nichts einzustellen:** Die Engine erkennt die Karte und schaltet die Beschleunigung selbst ein.
+- **Abgesichert:** ein Schalter zum Abschalten, und ein selbsttätiger Neustart im exakten Modus, falls die Engine nicht-endliche Werte meldet.
+- **Klein und nachvollziehbar:** 207 Zeilen in fünf Dateien, als Patch und als fertiger Zweig je Strata-Version.
+- **Der Preis:** Die Antworten sind nicht Bit für Bit dieselben wie beim Release, und die Karte zieht beim Einlesen 25 bis 30 W mehr. Einzelheiten unter „Was ich gemessen habe“.
+
+**Die ganze Anlage mit allen Messungen und Diagrammen:** [faf.net/lokale-ki](https://faf.net/lokale-ki/) (English: [faf.net/local-ai](https://faf.net/local-ai/)).
+
+Dies ist ein inoffizieller Ableger von [Strata](https://github.com/Niko1221/Strata) (MIT). Es ist kein Strata-Release, und Fragen dazu gehören hierher, nicht zum Original. Die Änderung ist klein: 207 Zeilen in fünf Dateien. Der aktuelle Stand sitzt auf Strata v0.2.16 (Zweig `xtx-0.2.16`); v0.2.15 lässt sich weiter bauen (Zweig `xtx-0.2.15`).
 
 ## Was er tut
 

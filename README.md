@@ -1,10 +1,24 @@
 # strata-xtx
 
-Strata for one Radeon RX 7900 XTX under Linux: the engine reads prompts about twice as fast without a single switch in the run configuration.
+Strata for one Radeon RX 7900 XTX under Linux: reads long prompts about twice as fast as the official release, without a single switch in the run configuration.
 
 [Deutsche Fassung](README.de.md)
 
-This is an unofficial fork of [Strata](https://github.com/Niko1221/Strata) (MIT). It is not a Strata release, and questions about it belong here, not upstream. The change is small: about 200 lines in five files. The current state sits on Strata v0.2.16 (branch `xtx-0.2.16`); v0.2.15 can still be built (branch `xtx-0.2.15`).
+| Against the 0.2.16 release, measured on the same card | Release | strata-xtx |
+|---|---:|---:|
+| Reading a prompt of 32,000 tokens | 1,321 tokens/s | 2,650 tokens/s |
+| Reading a prompt of 250,000 tokens | 204 s | 87 s |
+| Decode in chat | 69.6 tokens/s | 72.5 tokens/s |
+| Quality (my own task set, 102 tasks) | same | same |
+
+- **Nothing to configure:** the engine recognises the card and turns the speed-up on by itself.
+- **With a safety net:** one switch to turn it off, and an automatic restart in the exact mode if the engine reports non-finite values.
+- **Small and easy to follow:** 207 lines in five files, as a patch and as a ready branch per Strata version.
+- **The price:** the answers are not bit for bit the same as the release's, and the card draws 25 to 30 W more while reading. Details under "What I measured".
+
+**The whole setup with all measurements and charts:** [faf.net/local-ai](https://faf.net/local-ai/) (Deutsch: [faf.net/lokale-ki](https://faf.net/lokale-ki/)).
+
+This is an unofficial fork of [Strata](https://github.com/Niko1221/Strata) (MIT). It is not a Strata release, and questions about it belong here, not upstream. The change is small: 207 lines in five files. The current state sits on Strata v0.2.16 (branch `xtx-0.2.16`); v0.2.15 can still be built (branch `xtx-0.2.15`).
 
 ## What it does
 
