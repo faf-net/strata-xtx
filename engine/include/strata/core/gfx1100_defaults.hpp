@@ -10,7 +10,7 @@
 //   decode   chat 65.6 -> 72.5 tok/s, agent 75.8 -> 82.4
 //   quality  task set 98 and 97 of 102 without and with (two runs each); 32 of 32 hidden numbers found at 70K-250K
 //   load     90 minutes of mixed requests twice (plain model, and with a control vector and image input): no failed request, no non-finite value
-//   cost     about 0.6 GiB more host RAM after loading; card power unchanged
+//   cost     about 0.6 GiB more host RAM after loading; the card draws 25 to 30 W more while reading a prompt, the same while writing
 // Several switches change the rounding (FP16 operands on the matrix cores), so answers are not bit-identical to the
 // engine without the table.  A switch the user set (to anything) is never overridden; STRATA_GFX1100_DEFAULTS=0 turns
 // the whole table off, and with it the chunk rule below.
