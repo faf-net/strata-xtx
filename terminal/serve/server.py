@@ -4529,6 +4529,39 @@ class Service:
                 ctl.release()
             self.fifo.release()
 
+    def _gfx1100_rescue(self) -> bool:
+        """gfx1100 defaults (one RX 7900 XTX / XT, src/core/gfx1100_defaults.cpp): several of them compute the prompt with
+        FP16 operands.  When the engine reports non-finite logits (#879) while that table is on, the engine is started
+        again once with STRATA_GFX1100_DEFAULTS=0 (the code every other card runs) and stays there until the server is
+        started again.  True when it was restarted.  STRATA_GFX1100_RESCUE=0 in the config's env turns this off."""
+        eng = self.engine
+        sp = getattr(eng, "spawn", None)
+        if getattr(self, "_gfx1100_rescued", False) or not isinstance(sp, tuple) or len(sp) < 7:
+            return False
+        env = dict(sp[4] if sp[4] is not None else os.environ)
+        if env.get("STRATA_GFX1100_RESCUE") == "0" or env.get("STRATA_GFX1100_DEFAULTS") == "0":
+            return False
+        try:                                             # only where the engine said at its start that the table is on
+            with open(sp[3], "rb") as f:
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - 4_000_000))
+                if b"gfx1100 (one RX 7900" not in f.read():
+                    return False
+        except (OSError, TypeError):
+            return False
+        env["STRATA_GFX1100_DEFAULTS"] = "0"
+        eng.spawn = sp[:4] + (env,) + sp[5:]
+        self._gfx1100_rescued = True
+        print("[strata] gfx1100: non-finite logits (#879) with the gfx1100 prompt-path defaults on: starting the engine "
+              "again without them (STRATA_GFX1100_DEFAULTS=0; prompts are read at about half the speed until the server "
+              "is started again; STRATA_GFX1100_RESCUE=0 turns this off)", flush=True)
+        try:
+            eng.restart()
+        except Exception as e:                           # the next request starts it (with the safe environment)
+            print(f"[strata] gfx1100: the engine did not start again right away ({e}); the next request starts it", flush=True)
+            return False
+        return True
+
     def _say_died(self, e: Exception) -> None:
         """The server window's line for an engine that died (or was ended, #481) in the middle of a request."""
         note = self.engine.death_note() if hasattr(self.engine, "death_note") else ""
@@ -5357,6 +5390,7 @@ class Service:
         tail = ""                                       # the last characters written (the newlines before a call)
         answered, close_retried = False, False          # #1053: content or a call came out; the thinking was closed
         nf_retried = False                              # #879: the request was sent again after non-finite logits
+        nf_rescued = False                              # gfx1100: sent once more after the engine was restarted without its defaults
         timings, before = None, None                    # this request's timings; the engine's `last` before it
         recovery_count, reasoning_text, repeat_coverage = 0, "", 0.0
         looped, next_loop_check = False, LOOP_CHECK_EVERY       # #728: reasoning that repeats whole passages
@@ -5617,6 +5651,10 @@ class Service:
                                 print("[strata] the engine's logits became non-finite before the first token (#879); it "
                                       "dropped its cached state: sending the request again once", flush=True)
                                 continue
+                            if n == 0 and not nf_rescued and self._gfx1100_rescue():
+                                nf_rescued = True       # gfx1100: the engine runs without its prompt-path defaults now
+                                del segments[segments_before:]
+                                continue
                             if n == 0:
                                 finish = "error"
                                 print("[strata] the engine's logits became non-finite again on the retry (#879): the "
@@ -5627,6 +5665,7 @@ class Service:
                             print(f"[strata] the engine's logits became non-finite after {n} tokens (#879): the reply "
                                   "ends here as \"length\"; the engine dropped its cached state, so the next request "
                                   "reads its prompt from the start", flush=True)
+                            self._gfx1100_rescue()      # gfx1100: the next request runs without the prompt-path defaults
                             finish = "length"
                             break
                         if recover_prompt is not None and not cancel.is_set() and n < max_new:
