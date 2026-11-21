@@ -21,6 +21,7 @@
 #include "strata/platform/io_priority.hpp"
 #include "strata/core/adapt_async_default.hpp"
 #include "strata/core/arch_defaults.hpp"
+#include "strata/core/gfx1100_defaults.hpp"
 #include "strata/core/prompt_checkpoint_grid.hpp"
 #include "strata/core/reader_room.hpp"
 #include "strata/core/residency_trim.hpp"
@@ -4213,6 +4214,15 @@ int main(int argc, char** argv) {
                 strata::core::apply_gdn_chunked_default(true, all_gfx12);
 #endif
             }
+#if defined(STRATA_USE_HIP)
+            {   // one discrete gfx1100 card under Linux (gfx1100_defaults.hpp): before apply_arch_defaults; a switch the user set is kept
+                int nd1100 = 0;
+                if (cudaGetDeviceCount(&nd1100) != cudaSuccess) nd1100 = 0;
+                (void) cudaGetLastError();
+                std::fprintf(stderr, "strata: build %s (Strata engine %s with defaults for one RX 7900 XTX / XT)\n", strata::core::kGfx1100Build, STRATA_VERSION);
+                strata::core::apply_gfx1100_defaults(ad.gcnArchName, ad.integrated != 0, nd1100);
+            }
+#endif
             strata::core::apply_arch_defaults(ad.gcnArchName, all_igpu, o.batch, kMmqBuilt);
 #if defined(_WIN32)
             const bool win_host = true;
@@ -4397,6 +4407,21 @@ int main(int argc, char** argv) {
     }
 #endif
 #if defined(STRATA_USE_HIP) && !defined(_WIN32)
+    if (o.prefill_auto_bare && o.prefill_auto_cap == 0) {
+        // one discrete gfx1100 card (gfx1100_defaults.hpp): a bare `--prefill auto` may reach 32768, as STRATA_PREFILL_AUTO_MAX=32768 does.
+        // An explicit --prefill N, auto:N or STRATA_PREFILL_AUTO_MAX is never touched; STRATA_GFX1100_DEFAULTS=0 keeps 8192.
+        cudaDeviceProp xp{};
+        int xn = 0;
+        if (cudaGetDeviceCount(&xn) == cudaSuccess && cudaGetDeviceProperties(&xp, 0) == cudaSuccess) {
+            const int64_t top = strata::core::gfx1100_chunk_ceiling(xp.gcnArchName, xp.integrated != 0, xn);
+            if (top > 0) {
+                o.prefill_auto_max = top;
+                o.prefill_chunk = top;
+                std::fprintf(stderr, "strata generate: gfx1100: --prefill auto may take chunks up to %lld (STRATA_GFX1100_DEFAULTS=0 keeps 8192)\n", (long long) top);
+            }
+        }
+        (void) cudaGetLastError();
+    }
     if (o.prefill_auto_bare && o.prefill_auto_cap == 0) {
         // gfx1200 / gfx1201 (RDNA4, Linux): a bare `--prefill auto` may reach 16384 instead of 8192 (R9700, IQ3_S / Q2_0, 16K / 32K /
         // 64K prompts: +0.5 .. +5.8%, residuals identical to 8192).  The fit scan still picks a smaller chunk when the expert cache cannot lend
