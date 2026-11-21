@@ -25,7 +25,7 @@ namespace strata::core {
 
 /// This build's own name, printed once at engine start (stderr) so a log always says which engine wrote it.
 /// `strata --version` is left as upstream prints it: the updater and setup read that line.
-inline constexpr const char* kGfx1100Build = "xtx-1";
+inline constexpr const char* kGfx1100Build = "xtx-2";
 
 /// Whether the gfx1100 single-card defaults apply: Linux, exactly one visible device, discrete, gcn_arch "gfx1100",
 /// and STRATA_GFX1100_DEFAULTS is not "0".  A pure rule apart from the one environment read, so a test can check it.

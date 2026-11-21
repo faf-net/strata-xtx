@@ -50,7 +50,7 @@ std::vector<std::pair<std::string, std::string>> gfx1100_default_env(const char*
         // who does what, and the buffers in between
         {"STRATA_PREFILL_CPU_SHARE", "0.6"},
         {"STRATA_PREFILL_CPU_SHARE_MAX", "4096"},
-        {"STRATA_PREFILL_RING", "192"},
+        {"STRATA_PREFILL_RING", "384"},
         {"STRATA_STAGER_RING", "64"},
         {"STRATA_KV_HOST_DMA", "1"},
         {"STRATA_ADAPT_OVERLAP", "1"},
