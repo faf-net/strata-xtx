@@ -55,6 +55,12 @@ std::vector<std::pair<std::string, std::string>> gfx1100_default_env(const char*
         {"STRATA_KV_HOST_DMA", "1"},
         {"STRATA_ADAPT_OVERLAP", "1"},
         {"STRATA_SH_STREAM", "0"},
+        // Strata 0.2.19 brought its own chunk rule for discrete RDNA3 (gfx11_extra.hpp).  Taking that rule turns on the #2090 RAM
+        // guard, which keeps 8192-token chunks unless the extra cache loan plus 6 GiB is available.  On the 62 GiB NAS this table is
+        // measured on, 4 to 8 GiB stay available with the model loaded, so 0.2.19 read prompts from 16K on in 8192-token chunks at
+        // half the speed, with or without this table.  "1" is Strata's own way to keep the 32768 ceiling anyway, which is what
+        // 0.2.15 to 0.2.18 ran here without running short of RAM.  Releases before 0.2.19 do not know the name and ignore it.
+        {"STRATA_GFX11_CHUNK", "1"},
         // the decode window
         {"STRATA_QSA_ROWS", "1"},
         {"STRATA_VERIFY_QDEDUP", "1"},

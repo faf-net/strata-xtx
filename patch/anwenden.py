@@ -60,7 +60,7 @@ RETTUNG_ANKER_1 = "    def _say_died(self, e: Exception) -> None:\n"
 RETTUNG_NEU_1 = '''    def _gfx1100_rescue(self) -> bool:
         """gfx1100 defaults (one RX 7900 XTX / XT, src/core/gfx1100_defaults.cpp): several of them compute the prompt with
         FP16 operands.  When the engine reports non-finite logits (#879) while that table is on, the engine is started
-        again once with STRATA_GFX1100_DEFAULTS=0 (the code every other card runs) and stays there until the server is
+        again once with STRATA_GFX1100_DEFAULTS=0 and STRATA_GFX11_DEFAULTS=0 (the code every other card runs) and stays there until the server is
         started again.  True when it was restarted.  STRATA_GFX1100_RESCUE=0 in the config's env turns this off."""
         eng = self.engine
         sp = getattr(eng, "spawn", None)
@@ -78,10 +78,11 @@ RETTUNG_NEU_1 = '''    def _gfx1100_rescue(self) -> bool:
         except (OSError, TypeError):
             return False
         env["STRATA_GFX1100_DEFAULTS"] = "0"
+        env["STRATA_GFX11_DEFAULTS"] = "0"               # 0.2.19+: Strata's own RDNA3 defaults off too, so the restart runs the exact code
         eng.spawn = sp[:4] + (env,) + sp[5:]
         self._gfx1100_rescued = True
         print("[strata] gfx1100: non-finite logits (#879) with the gfx1100 prompt-path defaults on: starting the engine "
-              "again without them (STRATA_GFX1100_DEFAULTS=0; prompts are read at about half the speed until the server "
+              "again without them (STRATA_GFX1100_DEFAULTS=0 STRATA_GFX11_DEFAULTS=0; prompts are read at about half the speed until the server "
               "is started again; STRATA_GFX1100_RESCUE=0 turns this off)", flush=True)
         try:
             eng.restart()
