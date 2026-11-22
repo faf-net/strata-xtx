@@ -27,6 +27,7 @@ Strata's engine carries a number of switches (environment variables) for the pro
 - Linux, exactly one visible GPU, that GPU a discrete `gfx1100` card (RX 7900 XTX or XT).
 - In that case a table of 27 of the engine's switches applies. The engine newly sets 26 of them, one (`PF_FUSED`) is already on in the release. In addition a bare `--prefill auto` may take chunks of up to 32,768 tokens.
 - Everything else runs the code it always ran: two cards, any other architecture, an integrated GPU, Windows.
+- The table belongs to Strata's main engine only. The separate engine for Tencent Hy4-Flash that Strata 0.2.18 added (`strata-hy4`) reads none of these switches, so this build does not change Hy4-Flash ([measured](https://github.com/faf-net/ugreen-idx6011-egpu-llm/tree/main/messen/daten/2026-11-22-hy4-flash)).
 
 Three more things:
 
@@ -63,7 +64,7 @@ Against the unchanged 0.2.17 release, measured alternating (Strata's `tools/stra
 - **The table is the whole difference.** The same build with `STRATA_GFX1100_DEFAULTS=0` reads 16K at about 1,425 and 58K at about 1,303 tokens per second, with the table 2,586 / 2,581 and 3,268 / 3,171.
 - **A prompt of 250,000 tokens:** 82 to 84 s with this build (3,003 to 3,065 tokens per second, both models), 207 s on the unchanged release (1,216 tokens per second). The number hidden in the prompt was found every time.
 - **Writing: equal to faster.** In the alternating comparison this build came out above the release in all three rounds, by 5 to 15 % in the chat part and 8 to 13 % in the agent part. After long prompts and in continuous writing I see no such gain (57 to 63 and 64 to 70 tokens per second); with long answers the variant with control vector was even a little slower than on 0.2.16 (64.3 against 67.4), which I am keeping an eye on.
-- **Quality:** my task set scores 95 of 102 (plain) and 97 (with control vector) on 0.2.17; on 0.2.16 it was 97 and 96, on 0.2.15 97 and 98. On the unchanged 0.2.16 release it was the same as on this build: some tasks the model passes sometimes, on both (each repeated five times).
+- **Quality:** my task set scores 95 of 102 (plain) and 97 (with control vector) on 0.2.17; on 0.2.16 it was 97 and 96, on 0.2.15 97 and 98. On the unchanged 0.2.16 release it was the same as on this build: some tasks the model passes sometimes, on both (each repeated five times). A set of 102 tasks cannot show a difference of a few points, though; a larger paired comparison against the release is still to do.
 - **Endurance:** 90 minutes of mixed requests on the model with control vector: 1,267 requests, none failed, 181 of 181 hidden numbers found, no non-finite value in the engine log.
 - **Self-rescue:** with Strata's built-in fault injection the triggering request ended with an error (HTTP 503), the server restarted the engine once without the table and answered the following requests, with both models. A 16K prompt was then read at about 1,300 tokens per second, that is in the slow mode, and the number was found.
 - **Power:** while reading, the card draws 25 to 30 W more with the table (292 to 300 W against 267 to 270 W, measured on 18 Nov 2026 against the 0.2.14 release). Because reading takes half as long, the energy per token read is still about half: 0.037 to 0.047 against 0.070 to 0.087 Wh per 1,000 tokens. While writing the power is the same.
