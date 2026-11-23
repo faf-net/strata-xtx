@@ -4,15 +4,15 @@ Strata for one Radeon RX 7900 XTX under Linux: reads long prompts about twice as
 
 [Deutsche Fassung](README.de.md)
 
-| Against the 0.2.19 release, measured on the same card | Release | strata-xtx `0.2.19-xtx3` |
+| Against the 0.2.20 release, measured on the same card | Release | strata-xtx `0.2.20-xtx3` |
 |---|---:|---:|
-| Reading a prompt of 32,000 tokens | 1,472 tokens/s | **3,054 tokens/s** |
-| Reading a prompt of 250,000 tokens | 177 s | **78 s** |
-| Decode in chat | 70.6 tokens/s | 75.3 tokens/s |
-| Decode in the agent run | 75.9 tokens/s | **81.7 tokens/s** |
+| Reading a prompt of 32,000 tokens | 1,475 tokens/s | **3,053 tokens/s** |
+| Reading a prompt of 250,000 tokens | 175 s | **77 s** |
+| Decode in chat | 65.1 tokens/s | **72.2 tokens/s** |
+| Decode in the agent run | 79.7 tokens/s | 83.6 tokens/s |
 | Quality (my own task set, 102 tasks) | same | same |
 
-**New with 0.2.19:** Strata 0.2.19 brings its own defaults for RDNA3 cards, and with them a RAM guard that keeps prompt chunks small unless 6 GiB of RAM stay free. With a 125B model on a 64 GB machine that never happens, so 0.2.19 reads long prompts in 8K chunks. The previous build, applied unchanged to 0.2.19, read a 58K prompt at 1,497 instead of 3,206 tokens/s. `0.2.19-xtx3` adds Strata's own switch `STRATA_GFX11_CHUNK=1` to the table and reads it at 3,433, 7 % faster than before. Details under [Strata 0.2.19 and its RAM guard](#strata-0219-and-its-ram-guard).
+**New with 0.2.20:** the patch applied unchanged; 0.2.20 changes nothing for this card, and its RAM guard from 0.2.19 is still there. I also re-measured the CPU share for short prompts: the table stays as it is ([details](#what-i-tried-on-0220)). **Since 0.2.19:** Strata brings its own defaults for RDNA3 cards, and with them a RAM guard that keeps prompt chunks small unless 6 GiB of RAM stay free. With a 125B model on a 64 GB machine that never happens, so 0.2.19 reads long prompts in 8K chunks. The previous build, applied unchanged to 0.2.19, read a 58K prompt at 1,497 instead of 3,206 tokens/s. `0.2.19-xtx3` adds Strata's own switch `STRATA_GFX11_CHUNK=1` to the table and reads it at 3,433, 7 % faster than before. Details under [Strata 0.2.19 and its RAM guard](#strata-0219-and-its-ram-guard).
 
 - **Nothing to configure:** the engine recognises the card and turns the speed-up on by itself.
 - **With a safety net:** one switch to turn it off, and an automatic restart in the exact mode if the engine reports non-finite values.
@@ -38,43 +38,52 @@ Three more things:
 - **One way out.** `STRATA_GFX1100_DEFAULTS=0` turns the whole table off, and the chunk rule with it.
 - **Self-rescue.** If the engine reports non-finite values and Strata's own retry does not help, the server starts the engine once more without the table (and, from 0.2.19 on, without Strata's own RDNA3 defaults, `STRATA_GFX11_DEFAULTS=0`) and keeps running in the slower, exact mode. The request that triggers this ends with an error itself (HTTP 503); the following ones are answered. `STRATA_GFX1100_RESCUE=0` in the `env` of the run config turns this restart off.
 
-The engine prints one line at its start that names the build (`0.2.19-xtx3`; before that `xtx-2` on 0.2.17 and 0.2.18, `xtx-1` on 0.2.15 and 0.2.16 with a reading buffer of 192 instead of 384) and one line that lists the switches it set, so a log always says what ran. `strata --version` is unchanged.
+The engine prints one line at its start that names the build (`0.2.20-xtx3`, before that `0.2.19-xtx3`; earlier `xtx-2` on 0.2.17 and 0.2.18, `xtx-1` on 0.2.15 and 0.2.16 with a reading buffer of 192 instead of 384) and one line that lists the switches it set, so a log always says what ran. `strata --version` is unchanged.
 
 ## What I measured
 
-Hardware: RX 7900 XTX in an OCuLink x4 dock on a UGREEN iDX6011 Pro (62 GiB RAM), card in my quiet power setting. Model: Qwen3.8-Flash-Next IQ3_XXS, once plain and once as the variant with a control vector and image input. All figures were measured on 22 Nov 2026 on Strata 0.2.19 (`0.2.19-xtx3`) unless stated otherwise; the setup is described in [ugreen-idx6011-egpu-llm](https://github.com/faf-net/ugreen-idx6011-egpu-llm).
+Hardware: RX 7900 XTX in an OCuLink x4 dock on a UGREEN iDX6011 Pro (62 GiB RAM), card in my quiet power setting. Model: Qwen3.8-Flash-Next IQ3_XXS, once plain and once as the variant with a control vector and image input. All figures were measured on 23 Nov 2026 on Strata 0.2.20 (`0.2.20-xtx3`) unless stated otherwise; the setup is described in [ugreen-idx6011-egpu-llm](https://github.com/faf-net/ugreen-idx6011-egpu-llm).
 
 Reading a fresh prompt, tokens per second (median of two to three runs):
 
 | Prompt tokens | Plain model | With control vector | Duration, plain model |
 |---|---:|---:|---:|
-| 4,077 | 1,555 | 1,460 | 2.6 s |
-| 16,254 | 2,538 | 2,400 | 6.4 s |
-| 65,025 | 3,439 | 3,469 | 18.9 s |
-| 130,026 | 3,379 | 3,480 | 38.5 s |
-| 248,054 | 3,324 | 3,381 | 74.6 s |
+| 4,076 | 1,548 | 1,506 | 2.6 s |
+| 16,192 | 2,502 | 2,397 | 6.5 s |
+| 64,967 | 3,449 | 3,461 | 18.8 s |
+| 130,144 | 3,406 | 3,498 | 38.2 s |
+| 247,791 | 3,322 | 3,346 | 74.6 s |
 
-Against the unchanged 0.2.19 release, measured alternating (Strata's `tools/strata_bench.py --long`, three rounds, each engine loaded fresh, plain model):
+Against the unchanged 0.2.20 release, measured alternating (Strata's `tools/strata_bench.py --long`, three rounds, each engine loaded fresh, plain model):
 
-| Median | Release 0.2.19 | This build |
+| Median | Release 0.2.20 | This build |
 |---|---:|---:|
-| 4K prompt, tokens/s | 847 | 1,615 |
-| 16K prompt, tokens/s | 1,510 | 2,528 |
-| 32K prompt, tokens/s | 1,472 | 3,054 |
-| chat decode, tokens/s | 70.6 | 75.3 |
-| agent decode, tokens/s | 75.9 | 81.7 |
+| 4K prompt, tokens/s | 818 | 1,694 |
+| 16K prompt, tokens/s | 1,503 | 2,524 |
+| 32K prompt, tokens/s | 1,475 | 3,053 |
+| chat decode, tokens/s | 65.1 | 72.2 |
+| agent decode, tokens/s | 79.7 | 83.6 |
 
-- **The table is the whole difference.** The same build with `STRATA_GFX1100_DEFAULTS=0` reads 16K at 1,511 and 58K at 1,430 tokens per second, with the table 2,537 and 3,433 (median of two rounds of two runs).
-- **A prompt of 250,000 tokens:** 77 to 78 s with this build (both models), 177 s on the unchanged release. The task set's prompt of 247,954 tokens took 73 to 74 s (3,346 to 3,393 tokens per second). The number hidden in the prompt was found every time.
-- **Writing: equal to faster.** In the alternating comparison this build came out 7 % above the release in the chat part and 8 % in the agent part; at full card power the agent part ran at 90.9 against 79.5 tokens per second. After long prompts and in continuous writing it writes at 58 to 65 and 65 to 69 tokens per second; I have no release figures for these cases on 0.2.19.
-- **Quality:** my task set scores 98 of 102 (plain) and 97 (with control vector) on 0.2.19; on 0.2.18 it was 96 and 97, on 0.2.17 95 and 97, on 0.2.16 97 and 96, on 0.2.15 97 and 98. On the unchanged 0.2.16 release it was the same as on this build: some tasks the model passes sometimes, on both (each repeated five times). A set of 102 tasks cannot show a difference of a few points, though; a larger paired comparison against the release is still to do.
-- **Endurance:** 90 minutes of mixed requests on the model with control vector: 1,316 requests, none failed, 188 of 188 hidden numbers found, no non-finite value in the engine log.
-- **Self-rescue:** with Strata's built-in fault injection the triggering request ended with an error (HTTP 503), the server restarted the engine once without the table and answered the following requests, with both models on 0.2.17 and with the model with control vector on 0.2.18 and 0.2.19. A 16K prompt was then read at about 1,300 tokens per second, that is in the slow mode, and the number was found.
+- **The table is the whole difference.** The same build with `STRATA_GFX1100_DEFAULTS=0` reads 16K at 1,454 and 58K at 1,427 tokens per second, with the table 2,533 and 3,346 (median of two rounds of two runs).
+- **A prompt of 250,000 tokens:** 77 to 78 s with this build (both models), 175 s on the unchanged release. The task set's prompt of 247,954 tokens took 74 to 76 s (3,296 to 3,357 tokens per second). The number hidden in the prompt was found every time.
+- **Writing: equal to faster.** In the alternating comparison this build came out 11 % above the release in the chat part and 5 % in the agent part; at full card power the chat part ran at 73.4 against 64.8 tokens per second. After long prompts and in continuous writing it writes at 59 to 66 and 67 to 75 tokens per second; I have no release figures for these cases on 0.2.20.
+- **Quality:** my task set scores 98 of 102 (plain) and 97 (with control vector) on 0.2.20, the same as on 0.2.19; on 0.2.18 it was 96 and 97, on 0.2.17 95 and 97, on 0.2.16 97 and 96, on 0.2.15 97 and 98. On the unchanged 0.2.16 release it was the same as on this build: some tasks the model passes sometimes, on both (each repeated five times). A set of 102 tasks cannot show a difference of a few points, though; a larger paired comparison against the release is still to do.
+- **Endurance:** 90 minutes of mixed requests on the model with control vector: 1,309 requests, none failed, 187 of 187 hidden numbers found, no non-finite value in the engine log, available RAM never below 5.5 GiB.
+- **Self-rescue:** with Strata's built-in fault injection the triggering request ended with an error (HTTP 503), the server restarted the engine once without the table and answered the following requests, with both models on 0.2.17 and with the model with control vector on 0.2.18, 0.2.19 and 0.2.20. A 16K prompt was then read at about 1,300 tokens per second, that is in the slow mode, and the number was found.
 - **Power:** while reading, the card draws 25 to 30 W more with the table (292 to 300 W against 267 to 270 W, measured on 18 Nov 2026 against the 0.2.14 release). Because reading takes half as long, the energy per token read is still about half: 0.037 to 0.047 against 0.070 to 0.087 Wh per 1,000 tokens. While writing the power is the same.
 - **Cost:** answers are not bit-identical to the engine without the table. On top come about 0.6 GiB more host RAM after loading; I measured that on 18 Nov 2026 with the same switches on the 0.2.14 release and did not break it down again on later versions.
-- **Earlier bases:** as `xtx-1` (buffer 192) the patch read 2,404 and 2,290 at 16K and 2,907 and 2,890 at 248K on Strata 0.2.16 (19 Nov 2026), and 2,345 and 2,248 / 2,906 and 2,847 on 0.2.15 (18 Nov). As `xtx-2` on 0.2.17 (21 Nov) it read 2,478 and 2,366 / 3,093 and 3,128, and on 0.2.18 (22 Nov) 2,486 and 2,366 / 3,075 and 3,172. From 65K on `xtx-2` reads 5 to 11 % more than `xtx-1`; I attribute that to the larger buffer, but it is one series per build, not an alternating comparison. `0.2.19-xtx3` reads 7 to 10 % more than `xtx-2` on 0.2.18 from 64K on.
+- **Earlier bases:** as `xtx-1` (buffer 192) the patch read 2,404 and 2,290 at 16K and 2,907 and 2,890 at 248K on Strata 0.2.16 (19 Nov 2026), and 2,345 and 2,248 / 2,906 and 2,847 on 0.2.15 (18 Nov). As `xtx-2` on 0.2.17 (21 Nov) it read 2,478 and 2,366 / 3,093 and 3,128, and on 0.2.18 (22 Nov) 2,486 and 2,366 / 3,075 and 3,172. From 65K on `xtx-2` reads 5 to 11 % more than `xtx-1`; I attribute that to the larger buffer, but it is one series per build, not an alternating comparison. `0.2.19-xtx3` reads 7 to 10 % more than `xtx-2` on 0.2.18 from 64K on; `0.2.20-xtx3` reads within 1 % of `0.2.19-xtx3`.
 
 What I did not measure: the RX 7900 XT, a card in a full PCIe x16 slot, any other model or quant, Windows.
+
+## What I tried on 0.2.20
+
+- **CPU share for short prompts.** The table lets the idle CPU take part of the experts for prompt chunks of up to 4,096 tokens (`PREFILL_CPU_SHARE=0.6`, `PREFILL_CPU_SHARE_MAX=4096`). On `0.2.19-xtx3` the share made 1K prompts 2.7 times and 4K prompts 26 % faster than without it; Strata's own ceiling of 3,072 cost a third at 4K, a share of 0.4 or 0.8 read like 0.6. On 0.2.20 I compared the ceilings 3,072, 3,584, 4,096, 4,608 and 6,144 with prompts of 2K to 16K (three alternating rounds quiet and one at full power, both models): 4,096 keeps 4K at 1,131 instead of 714 tokens/s with 3,072; at 16K every ceiling reads the same (2,517 to 2,545); 6,144 reads 6K 30 % faster but 8K 12 % slower. The table stays at 4,096.
+- **hipBLASLt tuning table.** Switching it off changed nothing beyond the spread, so I did not tune it again.
+- **The chunk size is checked now.** After 0.2.19 every check of a new build reads the chunk size from the engine log and fails if it is not 32,768 tokens.
+- **The build name follows the release.** `patch/anwenden.py` sets it from the release tag the source is checked out at and from `PATCHSTAND`, so `v0.2.20` gives `0.2.20-xtx3`; the number after xtx goes up only when the patch changes.
+
+Raw data: [`messen/daten/2026-11-23-strata-xtx-0.2.20/`](https://github.com/faf-net/ugreen-idx6011-egpu-llm/tree/main/messen/daten/2026-11-23-strata-xtx-0.2.20) in the setup repository (`checks/cpu-share-ceiling.json`, `checks/cpu-share-and-hipblaslt-0.2.19.json`).
 
 ## Strata 0.2.19 and its RAM guard
 
@@ -112,10 +121,10 @@ You need Docker, a clone of Strata and the two release packages of the same vers
 ```sh
 git clone https://github.com/Niko1221/Strata.git
 docker build -t strata-bau:rocm-7.10 -f bau/Dockerfile Strata/terminal
-python3 xtx_bauen.py v0.2.19 --quelle Strata --paket <package> --ziel <output>
+python3 xtx_bauen.py v0.2.20 --quelle Strata --paket <package> --ziel <output>
 ```
 
-The result is `<output>/engine` and `<output>/control`, used like the release packages. `xtx_bauen.py` creates the branch `xtx-<version>` in the clone and writes the patch into it as a commit; Git needs a name and an e-mail address in the clone for that (`git config user.name`, `user.email`). The branches `xtx-0.2.19` to `xtx-0.2.15` of this repository are the patched source, if you would rather read or build that.
+The result is `<output>/engine` and `<output>/control`, used like the release packages. `xtx_bauen.py` creates the branch `xtx-<version>` in the clone and writes the patch into it as a commit; Git needs a name and an e-mail address in the clone for that (`git config user.name`, `user.email`). The branches `xtx-0.2.20` to `xtx-0.2.15` of this repository are the patched source, if you would rather read or build that.
 
 Since v0.2.16 Strata has a new folder layout: the engine lives under `engine/`, the server under `terminal/`. `patch/anwenden.py`, `bau/bauen.sh` and `xtx_bauen.py` recognise both layouts by themselves. Only the build image needs the right folder, because it reads Strata's `requirements.txt`: `Strata/terminal` from v0.2.16, `Strata` up to v0.2.15. The image holds tools only and can be used for both versions.
 

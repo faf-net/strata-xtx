@@ -25,8 +25,8 @@ namespace strata::core {
 
 /// This build's own name, printed once at engine start (stderr) so a log always says which engine wrote it.
 /// Scheme since 22 Nov 2026: <Strata release>-xtx<patch revision>, e.g. 0.2.19-xtx3 (earlier builds were
-/// named xtx-1 to xtx-3 alone). `strata --version` is left as upstream prints it: the updater and setup read that line.
-inline constexpr const char* kGfx1100Build = "0.2.19-xtx3";
+/// named xtx-1 to xtx-3 alone). patch/anwenden.py sets it from the release tag and PATCHSTAND when it copies this file. `strata --version` is left as upstream prints it: the updater and setup read that line.
+inline constexpr const char* kGfx1100Build = "0.2.20-xtx3";
 
 /// Whether the gfx1100 single-card defaults apply: Linux, exactly one visible device, discrete, gcn_arch "gfx1100",
 /// and STRATA_GFX1100_DEFAULTS is not "0".  A pure rule apart from the one environment read, so a test can check it.

@@ -9,7 +9,7 @@ ohne die Tabelle nach nicht-endlichen Werten). Jede Einfügung hängt an einer A
 des Originals; fehlt ein Anker (neue Strata-Version), bricht das Skript ab und nennt ihn, statt halb zu patchen.
 Ein zweiter Lauf ändert nichts mehr.
 """
-import os, shutil, sys
+import os, re, shutil, subprocess, sys
 
 HIER = os.path.dirname(os.path.abspath(__file__))
 MARKE = "gfx1100_defaults"
@@ -130,11 +130,34 @@ def ersetze(pfad, paare):
     print(f"gepatcht: {pfad} ({len(paare)} Stellen)")
 
 
+# Patch revision: goes up by one whenever the patch itself changes (table, rescue, chunk rule), not with a new Strata release.
+PATCHSTAND = 3
+
+
+def build_name(q):
+    """<Strata release>-xtx<PATCHSTAND>, the release taken from the tag the source tree is checked out at (e.g. v0.2.19 ->
+    0.2.19-xtx3). None if HEAD is not exactly at a release tag; then the name in gfx1100_defaults.hpp stays as it is."""
+    r = subprocess.run(["git", "-C", q, "describe", "--tags", "--exact-match", "HEAD"], capture_output=True, text=True)
+    tag = r.stdout.strip()
+    return f"{tag.lstrip('v')}-xtx{PATCHSTAND}" if r.returncode == 0 and re.fullmatch(r"v\d+(\.\d+)+", tag) else None
+
+
 def main():
     q = sys.argv[1]
     neu = os.path.isdir(os.path.join(q, "engine", "src"))      # ab v0.2.16: engine/ und terminal/ statt der Wurzel
     e, t = ("engine/", "terminal/") if neu else ("", "")
-    shutil.copy(os.path.join(HIER, "gfx1100_defaults.hpp"), os.path.join(q, e + "include/strata/core/gfx1100_defaults.hpp"))
+    hpp = os.path.join(q, e + "include/strata/core/gfx1100_defaults.hpp")
+    shutil.copy(os.path.join(HIER, "gfx1100_defaults.hpp"), hpp)
+    name = build_name(q)
+    if name:   # the build's own name follows the release it is built on, so it cannot be forgotten at a new release (22 Nov 2026)
+        s = open(hpp, encoding="utf-8").read()
+        s2 = re.sub(r'(kGfx1100Build = ")[^"]*(")', lambda m_: m_.group(1) + name + m_.group(2), s, count=1)
+        if s2 == s and name not in s:
+            sys.exit(f"kGfx1100Build not found in {hpp}")
+        open(hpp, "w", encoding="utf-8").write(s2)
+        print(f"build name: {name}")
+    else:
+        print("build name: HEAD is not at a release tag, keeping the name in gfx1100_defaults.hpp")
     shutil.copy(os.path.join(HIER, "gfx1100_defaults.cpp"), os.path.join(q, e + "src/core/gfx1100_defaults.cpp"))
     ersetze(os.path.join(q, e + "src/program/generate.cpp"),
             [("Include", INCLUDE_ANKER, INCLUDE_NEU), ("Tabelle setzen", ENV_ANKER, ENV_NEU), ("Chunk-Obergrenze", CHUNK_ANKER, CHUNK_NEU)])
