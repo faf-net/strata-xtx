@@ -50,7 +50,7 @@ Einlesen eines frischen Prompts in Token je Sekunde (Median aus zwei bis drei LÃ
 | Prompt-Token | Normales Modell | Mit Steuervektor | Dauer, normales Modell |
 |---|---:|---:|---:|
 | 4.077 | 1.531 | 1.501 | 2,7 s |
-| 16.254 | 2.538 | 2.388 | 6,4 s |
+| 16.254 | 2.539 | 2.388 | 6,4 s |
 | 65.025 | 3.451 | 3.474 | 18,8 s |
 | 130.027 | 3.411 | 3.463 | 38,1 s |
 | 248.054 | 3.312 | 3.356 | 74,9 s |
